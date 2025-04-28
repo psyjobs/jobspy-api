@@ -1,0 +1,65 @@
+version: '3'
+
+services:
+  jobspy-api:
+    build: .
+    image: jobspy-docker-api
+    container_name: jobspy-docker-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # The most important settings that need consistent values
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}  # Default to INFO if not set elsewhere
+      - ENABLE_API_KEY_AUTH=${ENABLE_API_KEY_AUTH:-false}
+      - API_KEYS=${API_KEYS:-}
+      
+      # Rate Limiting (only enable if needed)
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-false}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_TIMEFRAME=${RATE_LIMIT_TIMEFRAME:-3600}
+      
+      # Proxy Configuration
+      - DEFAULT_PROXIES=${DEFAULT_PROXIES}
+      - CA_CERT_PATH=${CA_CERT_PATH}
+      
+      # JobSpy Default Settings
+      - DEFAULT_SITE_NAMES=${DEFAULT_SITE_NAMES:-indeed,linkedin,zip_recruiter,glassdoor,google,bayt,naukri}
+      - DEFAULT_RESULTS_WANTED=${DEFAULT_RESULTS_WANTED:-20}
+      - DEFAULT_DISTANCE=${DEFAULT_DISTANCE:-50}
+      - DEFAULT_DESCRIPTION_FORMAT=${DEFAULT_DESCRIPTION_FORMAT:-markdown}
+      - DEFAULT_COUNTRY_INDEED=${DEFAULT_COUNTRY_INDEED:-USA}
+      
+      # Caching
+      - ENABLE_CACHE=${ENABLE_CACHE:-false}
+      - CACHE_EXPIRY=${CACHE_EXPIRY:-3600}
+      
+      # Logging
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      
+      # CORS
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      
+      # Health Endpoints
+      - ENABLE_HEALTH_ENDPOINTS=${ENABLE_HEALTH_ENDPOINTS:-true}
+      - ENABLE_DETAILED_HEALTH=${ENABLE_DETAILED_HEALTH:-true}
+      
+      # API Documentation
+      - ENABLE_SWAGGER_UI=${ENABLE_SWAGGER_UI:-true}
+      - ENABLE_REDOC=${ENABLE_REDOC:-true}
+      - SWAGGER_UI_PATH=${SWAGGER_UI_PATH:-/docs}
+      - REDOC_PATH=${REDOC_PATH:-/redoc}
+    volumes:
+      - ./logs:/app/logs
+      - ./scripts:/app/scripts  # Ensure scripts are mounted properly
+    restart: unless-stopped
+    # Use bash explicitly to execute scripts and fix permission issues
+    command: >
+      /bin/bash -c "bash /app/scripts/docker-entrypoint.sh"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 120s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

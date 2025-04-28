@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-jobspy
+pydantic
+pydantic-settings
+python-multipart
+psutil
+python-dotenv
