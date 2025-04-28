@@ -14,6 +14,19 @@ A Docker-containerized FastAPI application that provides secure API access to th
 - **Health Checks**: Monitor application health with dedicated endpoints
 - **Comprehensive Logging**: Track API usage and troubleshoot issues
 
+## Support the Project
+
+If you find JobSpy Docker API useful, please consider:
+- ⭐️ Star this repository on GitHub: https://github.com/rainmanjam/jobspy-api
+- 🍴 Fork it to contribute and customize.
+- 👤 Follow the repo to stay updated with new features and releases.
+- 📥 Pull the Docker image from Docker Hub:
+
+```bash
+  docker pull rainmanjam/jobspy-api:latest
+```
+  or visit https://hub.docker.com/r/rainmanjam/jobspy-api and doing the same there.
+
 ## Getting Started
 
 ### Prerequisites
