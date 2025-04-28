@@ -1,0 +1,122 @@
+[project]
+name = "jobspy-docker-api"
+version = "1.0.0"
+description = "A Docker-containerized FastAPI application providing secure API access to the Python JobSpy library."
+authors = [
+    { name = "Shannon Atkinson", email = "rainmanjam@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+keywords = ["fastapi", "jobspy", "docker", "api", "job-search"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "fastapi=0.115.12",
+    "uvicorn[standard]=0.34.2",
+    "python-jobspy=1.1.80",
+    "pydantic=2.11.3",
+    "pydantic-settings=2.9.1",
+    "python-multipart=0.0.20",
+    "psutil=7.0.0",
+    "python-dotenv=1.1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.2",
+    "pytest-cov>=5.0.0",
+    "pytest-asyncio>=0.23.6",
+    "pylint>=3.1.0",
+    "black>=24.4.2",
+    "isort>=5.13.2",
+    "pre-commit>=3.7.1",
+    "safety>=3.2.0"
+]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | logs
+  | temp
+  | __pycache__
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "--cov=app --cov-report=term-missing"
+testpaths = [
+    "tests"
+]
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = [
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+]
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.coverage.run]
+branch = true
+source = [
+    "app"
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:"
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pre-commit]
+repos = [
+    { repo = "https://github.com/pre-commit/pre-commit-hooks", rev = "v4.4.0", hooks = [
+        { id = "trailing-whitespace" },
+        { id = "end-of-file-fixer" },
+        { id = "check-yaml" },
+        { id = "check-added-large-files" }
+    ] },
+    { repo = "https://github.com/psf/black", rev = "23.3.0", hooks = [
+        { id = "black" }
+    ] },
+    { repo = "https://github.com/pycqa/isort", rev = "5.12.0", hooks = [
+        { id = "isort" }
+    ] },
+    { repo = "https://github.com/pycqa/flake8", rev = "6.0.0", hooks = [
+        { id = "flake8", additional_dependencies = ["flake8-docstrings"] }
+    ] }
+]
