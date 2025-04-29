@@ -4,10 +4,11 @@ import logging
 import os
 import time
 import uuid
+from typing import List, Optional, Union
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -43,6 +44,14 @@ logger.info(f"Starting application with log level: {log_level_name}")
 
 # Set Uvicorn's access logger to WARNING to avoid logging health checks
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
+SUPPORTED_SITES = ["indeed", "linkedin", "zip_recruiter", "glassdoor", "google", "bayt", "naukri"]
+
+def get_env_bool(var_name, default=True):
+    val = os.getenv(var_name)
+    if val is None:
+        return default
+    return str(val).lower() in ("1", "true", "yes", "on")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -104,7 +113,16 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting up Job Spy FastAPI application")
-    # Additional startup logic can be added here
+    
+    # Set API key auth
+    global ENABLE_API_KEY_AUTH
+    ENABLE_API_KEY_AUTH = get_env_bool("ENABLE_API_KEY_AUTH", default=True)
+    if ENABLE_API_KEY_AUTH:
+        logger.info("API key authentication is enabled")
+    else:
+        logger.warning("API key authentication is disabled. Set ENABLE_API_KEY_AUTH=true to enable.")
+    
+    # Additional startup logic
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -177,30 +195,91 @@ async def health_check():
 
 @app.get("/api/v1/search_jobs")
 async def search_jobs(
-    # ...existing parameters...
-    format: str = "json",
-    # ...existing parameters...
+    site_name: Union[List[str], str] = Query(default=None, description="Job sites to search on"),
+    search_term: Optional[str] = Query(None, description="Job search term"),
+    google_search_term: Optional[str] = Query(None, description="Search term for Google jobs"),
+    location: Optional[str] = Query(None, description="Job location"),
+    distance: Optional[int] = Query(None, description="Distance in miles"),
+    job_type: Optional[str] = Query(None, description="Job type (fulltime, parttime, internship, contract)"),
+    is_remote: Optional[bool] = Query(None, description="Remote job filter"),
+    results_wanted: Optional[int] = Query(None, description="Number of results per site"),
+    hours_old: Optional[int] = Query(None, description="Filter by hours since posting"),
+    easy_apply: Optional[bool] = Query(None, description="Filter for easy apply jobs"),
+    description_format: Optional[str] = Query(None, description="Format of job description"),
+    offset: Optional[int] = Query(None, description="Offset for pagination"),
+    verbose: Optional[int] = Query(None, description="Controls verbosity"),
+    linkedin_fetch_description: Optional[bool] = Query(None, description="Fetch full LinkedIn descriptions"),
+    country_indeed: Optional[str] = Query(None, description="Country filter for Indeed & Glassdoor"),
+    enforce_annual_salary: Optional[bool] = Query(None, description="Convert wages to annual salary"),
+    format: str = Query("json", description="Output format: json or csv"),
+    paginate: bool = Query(False, description="Enable pagination"),
+    page: int = Query(1, description="Page number when pagination is enabled"),
+    page_size: int = Query(10, ge=1, le=100, description="Results per page when pagination is enabled"),
 ):
-    # ...existing code to get jobs as a list of dicts...
-    jobs_data = ... # your existing jobs list/dict
-    # ...existing code...
+    try:
+        # Handle site_name=all explicitly
+        if site_name is None:
+            site_name = SUPPORTED_SITES
+        elif isinstance(site_name, str):
+            if site_name.lower() == "all":
+                site_name = SUPPORTED_SITES
+            else:
+                site_name = [site_name]
+        elif isinstance(site_name, list):
+            if any(s.lower() == "all" for s in site_name):
+                site_name = SUPPORTED_SITES
 
-    if format == "csv":
-        # Convert jobs_data to CSV
-        if not jobs_data:
+        # Use env default for country_indeed if not provided
+        if country_indeed is None:
+            country_indeed = os.getenv("DEFAULT_COUNTRY_INDEED", "USA")
+            logger.debug(f"Using default country_indeed from environment: {country_indeed}")
+
+        # Call your existing job scraping code
+        # ...existing job scraping code...
+
+        # This is a placeholder - replace with your actual jobs data
+        jobs_data = []  # Replace this with your actual jobs_data
+
+        # Format conversion and response
+        if format.lower() == "csv":
+            logger.debug("Returning CSV format")
+            if not jobs_data:
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(["No results"])
+                output.seek(0)
+                return StreamingResponse(
+                    output, 
+                    media_type="text/csv", 
+                    headers={"Content-Disposition": "attachment; filename=jobs.csv"}
+                )
+                
             output = io.StringIO()
-            writer = csv.writer(output)
-            writer.writerow(["No results"])
+            writer = csv.DictWriter(output, fieldnames=jobs_data[0].keys())
+            writer.writeheader()
+            writer.writerows(jobs_data)
             output.seek(0)
-            return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=jobs.csv"})
-        output = io.StringIO()
-        writer = csv.DictWriter(output, fieldnames=jobs_data[0].keys())
-        writer.writeheader()
-        writer.writerows(jobs_data)
-        output.seek(0)
-        return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=jobs.csv"})
-    # Default: JSON
-    return JSONResponse(content={"count": len(jobs_data), "jobs": jobs_data})
+            return StreamingResponse(
+                output, 
+                media_type="text/csv", 
+                headers={"Content-Disposition": "attachment; filename=jobs.csv"}
+            )
+            
+        # Default: JSON response
+        return {
+            "count": len(jobs_data),
+            "jobs": jobs_data
+        }
+        
+    except Exception as e:
+        logger.exception(f"Error in search_jobs: {str(e)}")
+        raise
+
+# API key auth default logic (at app startup or dependency)
+ENABLE_API_KEY_AUTH = get_env_bool("ENABLE_API_KEY_AUTH", default=True)
+if not ENABLE_API_KEY_AUTH:
+    import warnings
+    warnings.warn("API key authentication is disabled. Set ENABLE_API_KEY_AUTH=true to enable.")
 
 if __name__ == "__main__":
     import uvicorn

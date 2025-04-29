@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Union, Dict, Any
 from fastapi import FastAPI, Query, HTTPException
 from pydantic import BaseModel, Field
@@ -9,6 +10,14 @@ app = FastAPI(
     description="API for searching jobs across multiple platforms using JobSpy",
     version="1.0.0",
 )
+
+SUPPORTED_SITES = ["indeed", "linkedin", "zip_recruiter", "glassdoor", "google", "bayt", "naukri"]
+
+def get_env_bool(var_name, default=True):
+    val = os.getenv(var_name)
+    if val is None:
+        return default
+    return str(val).lower() in ("1", "true", "yes", "on")
 
 class JobSearchParams(BaseModel):
     site_name: Union[List[str], str] = Field(
@@ -77,9 +86,9 @@ def search_jobs(params: JobSearchParams):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error scraping jobs: {str(e)}")
 
-@app.get("/search_jobs", response_model=JobResponse, tags=["Jobs"])
-def search_jobs_get(
-    site_name: List[str] = Query(["indeed", "linkedin", "zip_recruiter"], description="Job sites to search on"),
+@app.get("/api/v1/search_jobs")
+async def search_jobs_get(
+    site_name: Union[List[str], str] = Query("all", description="Job sites to search on"),
     search_term: str = Query(None, description="Job search term"),
     google_search_term: Optional[str] = Query(None, description="Search term for Google jobs"),
     location: str = Query(None, description="Job location"),
@@ -95,7 +104,22 @@ def search_jobs_get(
     linkedin_fetch_description: bool = Query(False, description="Fetch full LinkedIn descriptions"),
     country_indeed: Optional[str] = Query(None, description="Country filter for Indeed & Glassdoor"),
     enforce_annual_salary: bool = Query(False, description="Convert wages to annual salary"),
+    format: str = Query("json", description="Output format: json or csv"),
 ):
+    # Handle site_name=all
+    if isinstance(site_name, str):
+        if site_name.lower() == "all":
+            site_name = SUPPORTED_SITES
+        else:
+            site_name = [site_name]
+    elif isinstance(site_name, list):
+        if "all" in [s.lower() for s in site_name]:
+            site_name = SUPPORTED_SITES
+
+    # Use env default for country_indeed if not provided
+    if not country_indeed:
+        country_indeed = os.getenv("DEFAULT_COUNTRY_INDEED", "USA")
+
     try:
         jobs_df = scrape_jobs(
             site_name=site_name,
@@ -114,19 +138,37 @@ def search_jobs_get(
             linkedin_fetch_description=linkedin_fetch_description,
             country_indeed=country_indeed,
             enforce_annual_salary=enforce_annual_salary,
-            # Note: proxies, linkedin_company_ids, and ca_cert are omitted from GET request
-            # for simplicity, use POST for these more complex parameters
         )
         
         # Convert DataFrame to dictionary format
-        jobs_list = jobs_df.to_dict('records')
-        
-        return {
-            "count": len(jobs_list),
-            "jobs": jobs_list
-        }
+        jobs_data = jobs_df.to_dict('records')
+
+        if format.lower() == "csv":
+            import io, csv
+            from fastapi.responses import StreamingResponse
+            if not jobs_data:
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(["No results"])
+                output.seek(0)
+                return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=jobs.csv"})
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=jobs_data[0].keys())
+            writer.writeheader()
+            writer.writerows(jobs_data)
+            output.seek(0)
+            return StreamingResponse(output, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=jobs.csv"})
+        # Default: JSON
+        from fastapi.responses import JSONResponse
+        return JSONResponse(content={"count": len(jobs_data), "jobs": jobs_data})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error scraping jobs: {str(e)}")
+
+# API key auth default logic (at app startup or dependency)
+ENABLE_API_KEY_AUTH = get_env_bool("ENABLE_API_KEY_AUTH", default=True)
+if not ENABLE_API_KEY_AUTH:
+    import warnings
+    warnings.warn("API key authentication is disabled. Set ENABLE_API_KEY_AUTH=true to enable.")
 
 if __name__ == "__main__":
     import uvicorn
