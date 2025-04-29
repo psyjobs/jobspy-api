@@ -22,6 +22,10 @@ If you find JobSpy Docker API useful, please consider:
 - 👤 Follow the repo to stay updated with new features and releases.
 - 📥 Pull the Docker image from Docker Hub:
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=rainmanjam/jobspy-api&type=Date)](https://www.star-history.com/#rainmanjam/jobspy-api&Date)
+
 ```bash
   docker pull rainmanjam/jobspy-api:latest
 ```
