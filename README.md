@@ -14,6 +14,10 @@ A Docker-containerized FastAPI application that provides secure API access to th
 - **Health Checks**: Monitor application health with dedicated endpoints
 - **Comprehensive Logging**: Track API usage and troubleshoot issues
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=rainmanjam/jobspy-api&type=Date)](https://www.star-history.com/#rainmanjam/jobspy-api&Date)
+
 ## Support the Project
 
 If you find JobSpy Docker API useful, please consider:
@@ -21,11 +25,6 @@ If you find JobSpy Docker API useful, please consider:
 - 🍴 Fork it to contribute and customize.
 - 👤 Follow the repo to stay updated with new features and releases.
 - 📥 Pull the Docker image from Docker Hub:
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=rainmanjam/jobspy-api&type=Date)](https://www.star-history.com/#rainmanjam/jobspy-api&Date)
-
 ```bash
   docker pull rainmanjam/jobspy-api:latest
 ```
