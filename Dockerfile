@@ -59,7 +59,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Install curl and build-essential for healthcheck and required dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl build-essential && \
+    apt-get install -y --no-install-recommends curl build-essential git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
