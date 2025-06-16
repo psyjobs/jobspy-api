@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-python-jobspy
+git+https://github.com/psyjobs/JobSpy.git
 pydantic
 pydantic-settings
 python-multipart
