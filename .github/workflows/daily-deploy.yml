@@ -1,8 +1,9 @@
-name: Daily Deploy to Coolify
+name: Coolify Daily Deploy
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at 00:00 UTC (midnight). Adjust as needed (e.g., '0 12 * * *' for noon).
+    - cron: '0 0 * * *'  # Runs daily at 00:00 UTC (8:00 AM HKT)
+  workflow_dispatch:  # Adds manual trigger option
 
 jobs:
   deploy:
@@ -12,4 +13,4 @@ jobs:
         run: |
           curl --request GET "${{ secrets.COOLIFY_WEBHOOK }}" \
                --header "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-               --fail  # Fail the job if the request errors out
+               --fail
