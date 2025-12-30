@@ -13,7 +13,9 @@ async def fetch_data_from_external_api(url: str, params: dict = None):
     logger.debug(f"External API request {request_id} started: GET {url} - Params: {params}")
     
     try:
-        async with httpx.AsyncClient() as client:
+        # Add timeouts to prevent hanging connections
+        timeout = httpx.Timeout(30.0, connect=10.0)  # 30s total, 10s connect
+        async with httpx.AsyncClient(timeout=timeout, limits=httpx.Limits(max_connections=100, max_keepalive_connections=20)) as client:
             response = await client.get(url, params=params)
         
         elapsed_time = time.time() - start_time

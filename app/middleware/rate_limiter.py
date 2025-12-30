@@ -15,6 +15,31 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.enabled = settings.RATE_LIMIT_ENABLED
         self.max_requests = settings.RATE_LIMIT_REQUESTS
         self.timeframe = settings.RATE_LIMIT_TIMEFRAME
+        self._last_cleanup = time.time()
+        self._cleanup_interval = 300  # Clean up every 5 minutes
+    
+    def _cleanup_old_entries(self, current_time: float):
+        """Remove old entries and empty client identifiers to prevent memory leaks."""
+        if current_time - self._last_cleanup < self._cleanup_interval:
+            return
+        
+        # Remove entries older than timeframe and empty identifiers
+        to_remove = []
+        for client_id, timestamps in self.rate_limits.items():
+            # Filter out old timestamps
+            self.rate_limits[client_id] = [
+                ts for ts in timestamps 
+                if current_time - ts < self.timeframe
+            ]
+            # Mark empty entries for removal
+            if not self.rate_limits[client_id]:
+                to_remove.append(client_id)
+        
+        # Remove empty entries
+        for client_id in to_remove:
+            del self.rate_limits[client_id]
+        
+        self._last_cleanup = current_time
     
     async def dispatch(self, request: Request, call_next):
         if not self.enabled:
@@ -26,7 +51,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check rate limit
         current_time = time.time()
         
-        # Clean up old request timestamps
+        # Periodic cleanup to prevent memory leaks
+        self._cleanup_old_entries(current_time)
+        
+        # Clean up old request timestamps for this client
         self.rate_limits[client_identifier] = [
             timestamp for timestamp in self.rate_limits[client_identifier] 
             if current_time - timestamp < self.timeframe
