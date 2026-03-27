@@ -13,6 +13,7 @@ class HealthCheck(BaseModel):
     cache: Optional[Dict[str, Any]] = None
     config: Optional[Dict[str, Any]] = None
     health_endpoints: Optional[Dict[str, bool]] = None
+    memory_mb: Optional[float] = None
     timestamp: Optional[float] = None
 
 class DetailedHealthCheck(BaseModel):

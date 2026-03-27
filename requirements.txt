@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
+gunicorn
 git+https://github.com/psyjobs/JobSpy.git
 pydantic
 pydantic-settings

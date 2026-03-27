@@ -5,6 +5,7 @@ from app.config import settings as app_settings
 import logging
 import os
 import platform
+import psutil
 import time
 from app.utils.auth_health import check_auth_configuration
 
@@ -28,7 +29,12 @@ async def health_check():
     """
     # Get authentication status
     auth_status = check_auth_configuration()
-    
+
+    # Get memory usage
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_mb = round(memory_info.rss / 1024 / 1024, 1)
+
     # Build response with all the requested information
     return HealthCheck(
         status="ok",
@@ -54,6 +60,7 @@ async def health_check():
             "enabled": app_settings.ENABLE_HEALTH_ENDPOINTS,
             "detailed_health": app_settings.ENABLE_DETAILED_HEALTH,
         },
+        memory_mb=memory_mb,
         config={
             "default_site_names": app_settings.DEFAULT_SITE_NAMES,
             "default_results_wanted": app_settings.DEFAULT_RESULTS_WANTED,

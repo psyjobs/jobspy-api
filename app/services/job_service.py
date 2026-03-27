@@ -1,5 +1,7 @@
 """Job search service layer."""
-from typing import Dict, Any
+import concurrent.futures
+import os
+from typing import Dict, Any, Tuple
 import pandas as pd
 from jobspy import scrape_jobs
 import logging
@@ -9,44 +11,56 @@ from app.cache import cache
 
 logger = logging.getLogger(__name__)
 
+SCRAPE_TIMEOUT = int(os.getenv("SCRAPE_TIMEOUT", "120"))
+
 class JobService:
     """Service for interacting with JobSpy library."""
-    
+
     @staticmethod
-    def search_jobs(params: Dict[str, Any]) -> pd.DataFrame:
+    def search_jobs(params: Dict[str, Any]) -> Tuple[pd.DataFrame, bool]:
         """
         Execute a job search using the JobSpy library.
-        
+
         Args:
             params: Dictionary of search parameters
-            
+
         Returns:
-            DataFrame containing job results
+            Tuple of (DataFrame containing job results, whether results were cached)
         """
         # Apply default proxies from env if none provided
         if params.get('proxies') is None and settings.DEFAULT_PROXIES:
             params['proxies'] = settings.DEFAULT_PROXIES
-        
+
         # Apply default CA cert path if none provided
         if params.get('ca_cert') is None and settings.CA_CERT_PATH:
             params['ca_cert'] = settings.CA_CERT_PATH
-            
+
         # Apply default country_indeed if none provided
         if params.get('country_indeed') is None and settings.DEFAULT_COUNTRY_INDEED:
             params['country_indeed'] = settings.DEFAULT_COUNTRY_INDEED
-        
+
         # Check cache first
         cached_results = cache.get(params)
         if cached_results is not None:
             logger.info(f"Returning cached results with {len(cached_results)} jobs")
             return cached_results, True
-        
-        # Execute search
-        jobs_df = scrape_jobs(**params)
-        
+
+        # Execute search with timeout to prevent hung workers
+        logger.info(f"Starting job scrape with {SCRAPE_TIMEOUT}s timeout")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(scrape_jobs, **params)
+            try:
+                jobs_df = future.result(timeout=SCRAPE_TIMEOUT)
+            except concurrent.futures.TimeoutError:
+                logger.warning(f"Job scraping timed out after {SCRAPE_TIMEOUT}s for params: {params.get('search_term', 'N/A')}")
+                raise TimeoutError(
+                    f"Job scraping timed out after {SCRAPE_TIMEOUT} seconds. "
+                    "Try reducing the number of job sites or results_wanted."
+                )
+
         # Cache the results
         cache.set(params, jobs_df)
-        
+
         return jobs_df, False
 
     @staticmethod

@@ -83,7 +83,7 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
                 # Need to create a new Request with the body because the original was consumed
                 request = Request(
                     scope=request.scope,
-                    receive=self._receive_with_body(body)
+                    receive=await self._receive_with_body(body)
                 )
             except Exception as e:
                 logger.warning(f"Failed to log request body: {str(e)}")

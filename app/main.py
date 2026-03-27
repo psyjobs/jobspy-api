@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import logging
@@ -53,19 +54,39 @@ def get_env_bool(var_name, default=True):
         return default
     return str(val).lower() in ("1", "true", "yes", "on")
 
+async def periodic_cache_cleanup():
+    """Background task that periodically cleans up expired cache entries."""
+    cleanup_interval = settings.CACHE_EXPIRY if settings.CACHE_EXPIRY > 0 else 3600
+    while True:
+        await asyncio.sleep(cleanup_interval)
+        try:
+            cache.cleanup_expired()
+            logger.info("Periodic cache cleanup completed")
+        except Exception as e:
+            logger.warning(f"Cache cleanup error: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize services, connections, etc.
     logger.info("Starting up JobSpy Docker API")
-    
+
     # Log environment variables to help debugging
     log_environment_settings()
-    
+
+    # Start background cache cleanup task
+    cleanup_task = asyncio.create_task(periodic_cache_cleanup())
+    logger.info("Started periodic cache cleanup task")
+
     # Yield control to the application
     yield
-    
+
     # Shutdown: Clean up resources
     logger.info("Shutting down JobSpy Docker API")
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        pass
     cache.clear()
 
 # Create FastAPI app with enhanced documentation
