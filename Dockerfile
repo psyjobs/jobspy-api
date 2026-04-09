@@ -80,7 +80,10 @@ RUN find /app/scripts -type f -name "*.sh" -exec chmod +x {} \; && \
     chmod +x /app/scripts/confirm_env.sh /app/scripts/debug_env_load_order.sh
 
 # Add healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Relaxed params: scraping bursts can briefly saturate workers, so give them room
+# before marking the container unhealthy. 60s interval + 30s timeout + 5 retries
+# tolerates ~5 minutes of worker saturation before Coolify/Traefik reacts.
+HEALTHCHECK --interval=60s --timeout=30s --start-period=60s --retries=5 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Expose port

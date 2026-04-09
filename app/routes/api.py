@@ -139,7 +139,7 @@ def validate_job_search_params(
         )
 
 @router.get("/search_jobs", response_model=Union[JobResponse, PaginatedJobResponse], dependencies=[Depends(get_api_key)])
-async def search_jobs(
+def search_jobs(
     request: Request,
     # Pagination parameters
     paginate: bool = Query(False, description="Enable pagination"),
@@ -354,7 +354,7 @@ async def search_jobs(
         )
 
 @router.post("/search_jobs", response_model=Union[JobResponse, PaginatedJobResponse], dependencies=[Depends(get_api_key)])
-async def search_jobs_post(
+def search_jobs_post(
     params: JobSearchParams,
     request: Request,
 ):
