@@ -604,7 +604,7 @@ Version deprecation notices will be posted in release notes and the API will ret
 | description_format | string | Format of job description (markdown, html) (default: markdown) |
 | offset | integer | Starts the search from an offset |
 | verbose | integer | Controls verbosity (0: errors only, 1: errors+warnings, 2: all logs) (default: 2) |
-| linkedin_fetch_description | boolean | Fetch full LinkedIn descriptions (slower) (default: false) |
+| linkedin_fetch_description | boolean | Fetch full LinkedIn descriptions (slower) (default: true, set via DEFAULT_LINKEDIN_FETCH_DESCRIPTION) |
 | linkedin_company_ids | list of integers | LinkedIn company IDs to filter by |
 | country_indeed | string | Country filter for Indeed & Glassdoor (default: USA) |
 | enforce_annual_salary | boolean | Convert wages to annual salary (default: false) |

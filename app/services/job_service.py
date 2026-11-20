@@ -39,6 +39,10 @@ class JobService:
         if params.get('country_indeed') is None and settings.DEFAULT_COUNTRY_INDEED:
             params['country_indeed'] = settings.DEFAULT_COUNTRY_INDEED
 
+        # Fetch full LinkedIn descriptions unless the caller explicitly opted out
+        if params.get('linkedin_fetch_description') is None:
+            params['linkedin_fetch_description'] = settings.DEFAULT_LINKEDIN_FETCH_DESCRIPTION
+
         # Check cache first
         cached_results = cache.get(params)
         if cached_results is not None:

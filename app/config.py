@@ -72,6 +72,11 @@ class Settings:
         self.DEFAULT_COUNTRY_INDEED, self.DEFAULT_COUNTRY_INDEED_SOURCE = self._get_setting_with_source(
             "DEFAULT_COUNTRY_INDEED", None
         )
+        # LinkedIn search results carry no description; without this, LinkedIn
+        # jobs are stored with description = null.
+        self.DEFAULT_LINKEDIN_FETCH_DESCRIPTION, self.DEFAULT_LINKEDIN_FETCH_DESCRIPTION_SOURCE = self._get_setting_with_source(
+            "DEFAULT_LINKEDIN_FETCH_DESCRIPTION", "true", self._parse_bool
+        )
         
         # Caching
         self.ENABLE_CACHE, self.ENABLE_CACHE_SOURCE = self._get_setting_with_source(

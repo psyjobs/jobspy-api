@@ -249,7 +249,7 @@ def search_jobs(
         description_format=description_format if description_format else settings.DEFAULT_DESCRIPTION_FORMAT,
         offset=offset if offset is not None else 0,
         verbose=verbose if verbose is not None else 2,
-        linkedin_fetch_description=linkedin_fetch_description if linkedin_fetch_description is not None else False,
+        linkedin_fetch_description=linkedin_fetch_description,
         linkedin_company_ids=linkedin_company_ids,
         country_indeed=country_indeed if country_indeed else settings.DEFAULT_COUNTRY_INDEED,
         enforce_annual_salary=enforce_annual_salary if enforce_annual_salary is not None else False,

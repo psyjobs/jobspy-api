@@ -20,7 +20,7 @@ class JobSearchParams(BaseModel):
     description_format: Optional[str] = Field(default="markdown", description="Format of job description")
     offset: Optional[int] = Field(default=0, description="Offset for pagination")
     verbose: Optional[int] = Field(default=2, description="Controls verbosity (0: errors only, 1: errors+warnings, 2: all logs)")
-    linkedin_fetch_description: Optional[bool] = Field(default=False, description="Fetch full LinkedIn descriptions")
+    linkedin_fetch_description: Optional[bool] = Field(default=None, description="Fetch full LinkedIn descriptions (defaults to DEFAULT_LINKEDIN_FETCH_DESCRIPTION, true)")
     linkedin_company_ids: Optional[List[int]] = Field(default=None, description="LinkedIn company IDs to filter by")
     country_indeed: Optional[str] = Field(default=None, description="Country filter for Indeed & Glassdoor")
     enforce_annual_salary: Optional[bool] = Field(default=False, description="Convert wages to annual salary")
