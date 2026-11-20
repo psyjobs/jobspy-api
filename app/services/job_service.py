@@ -4,7 +4,30 @@ import os
 from typing import Dict, Any, Tuple
 import pandas as pd
 from jobspy import scrape_jobs
+from jobspy.linkedin import LinkedIn
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import logging
+
+# Official python-jobspy 1.2.0 dropped the LinkedIn session retry our fork had
+# (has_retry=True, delay=5). Without it, any 429 on /jobs/view/<id> makes
+# _get_job_details return {} and the job is saved with description=None.
+# ponytail: monkeypatch on a third-party class; drop if upstream restores retries.
+_linkedin_init = LinkedIn.__init__
+
+
+def _linkedin_init_with_retry(self, *args, **kwargs):
+    _linkedin_init(self, *args, **kwargs)
+    adapter = HTTPAdapter(max_retries=Retry(
+        total=3, connect=3, status=3,
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=5,
+    ))
+    self.session.mount("https://", adapter)
+    self.session.mount("http://", adapter)
+
+
+LinkedIn.__init__ = _linkedin_init_with_retry
 
 from app.config import settings
 from app.cache import cache
